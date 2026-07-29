@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+  <title>Batumi Buses — Карты и Маршруты</title>
+  <meta name="theme-color" content="#11a37a">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+  <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="assets/styles/base.css?v=final-ui-20260729">
+  <link rel="stylesheet" href="assets/styles/legacy.css?v=final-ui-20260729">
+  <link rel="stylesheet" href="assets/styles/components.css?v=final-ui-20260729">
+</head>
+<body>
+<div class="app">
+  <div id="map"></div>
+
+  <div class="welcome-badge" id="welcomeBadge">
+    <img src="assets/icons/welcome.png" data-i18n-alt="welcome">
+    <span data-i18n="welcomeBatumi">Добро пожаловать в Батуми</span>
+  </div>
+  <button class="sidebar-toggle" id="sidebarToggle" data-i18n-title="menu"><img src="assets/icons/menu.png" data-i18n-alt="menu"></button>
+
+  <div class="floating-language" id="floatingLanguage">
+    <span class="floating-language-label" data-i18n="language">Язык</span>
+    <select id="languageSelect" class="language-select" aria-label="Language">
+      <option value="ru">RU · Русский</option>
+      <option value="en">EN · English</option>
+      <option value="ka">KA · ქართული</option>
+      <option value="uk">UK · Українська</option>
+    </select>
+  </div>
+
+  <div class="sidebar" id="appSidebar">
+    <div class="sidebar-header">
+      <h2 class="sidebar-title">Batumi Maps</h2>
+      <button class="sidebar-close" id="sidebarClose"><img src="assets/icons/close.png" data-i18n-alt="close"></button>
+    </div>
+    <div class="sidebar-content" style="position:relative">
+      <div class="route-builder-box">
+        <div class="section-title" data-i18n="buildRoute">Построить маршрут</div>
+        <div class="route-input-group">
+          <span class="route-input-icon"><img src="assets/icons/from-pin.png" alt="Откуда"></span>
+          <input type="text" id="fromInput" placeholder="Откуда (GPS или точка)" data-i18n-placeholder="fromPlaceholder" readonly style="cursor:pointer">
+        </div>
+        <div class="route-input-group" style="position:relative">
+          <span class="route-input-icon"><img src="assets/icons/destination-flag.png" alt="Куда"></span>
+          <input type="text" id="toInput" placeholder="Куда едем?" data-i18n-placeholder="whereGo">
+          <button type="button" id="pickToBtn" class="field-icon-btn" data-i18n-title="pickMap"><img src="assets/icons/map-pick.png" data-i18n-alt="pickMap"></button>
+          <div class="places-results" id="placesResultsContainer"><div id="placesResultsList"></div></div>
+        </div>
+        <div class="route-actions">
+          <button class="route-action-btn" id="myGpsBtn" data-i18n="myGps">Моё GPS</button>
+          <button class="route-action-btn primary" id="findTransitBtn" data-i18n="findTransit">Найти проезд</button>
+          <button class="route-action-btn" id="clearPointsBtn" data-i18n="reset">Сброс</button>
+        </div>
+      </div>
+
+      <div id="transitResultsContainer" class="transit-results-section" style="display:none">
+        <div class="section-title" data-i18n="transitOptions">Варианты проезда</div>
+        <div id="transitResultsList"></div>
+      </div>
+
+      <div id="activeRouteStatusContainer" style="display:none">
+        <div class="active-route-panel">
+          <div class="active-route-info"><img class="inline-icon" src="assets/icons/bus.png" alt="Автобус"><span id="activeRouteNameDisplay" data-i18n="route">Маршрут</span><span id="sidebarBusCount" style="background:#11a37a;color:white;padding:1px 6px;border-radius:8px;font-size:11px">0</span></div><button class="live-route-reset-btn" id="liveRouteResetBtn" type="button" data-i18n-title="resetLive"><img src="assets/icons/close.png" alt="Сбросить"></button>
+        </div>
+      </div>
+
+      <div class="routes-section">
+        <div class="section-title"><span data-i18n="liveRoutes">Живые маршруты автобусов</span></div>
+        <div class="dropdown-search"><span class="search-icon"><img src="assets/icons/search.png" alt="Поиск"></span><input type="text" id="searchInput" placeholder="Поиск маршрута..." data-i18n-placeholder="searchRoute"><button class="clear-btn" id="clearSearchBtn"><img src="assets/icons/close.png" alt="Очистить"></button></div>
+        <div id="dropdownBody" class="route-list"><div class="dd-msg" data-i18n="loadingRoutes">Загрузка маршрутов...</div></div>
+      </div>
+    </div>
+  </div>
+
+  <button class="mobile-search-btn" id="mobileSearchBtn"><span class="mobile-search-btn-icon"><img src="assets/icons/search.png" alt="Поиск"></span><span id="mobileSearchBtnText" data-i18n="whereGo">Куда едем?</span></button>
+
+  <div class="geo-dropdown-container">
+    <button class="geo-btn" id="geoBtn" data-i18n-title="location"><img src="assets/icons/geolocation.png" data-i18n-alt="location"></button>
+    <div class="geo-dropdown" id="geoDropdownMenu" style="display:none">
+      <button class="geo-dropdown-item" id="gpsOptionBtn"><img src="assets/icons/geolocation.png" alt="GPS"><span data-i18n="byGps">По GPS</span></button>
+      <button class="geo-dropdown-item" id="manualOptionBtn"><img src="assets/icons/manual-pick.png" alt=""><span data-i18n="manualMap">Указать на карте</span></button>
+    </div>
+  </div>
+
+  <div class="live-badge" id="liveBadge" style="display:none"><span class="live-dot"></span>Live</div>
+  <div class="legend" id="legendBox" style="display:none"><div class="leg-row"><span class="leg-dot fwd"></span><span data-i18n="outbound">Туда</span></div><div class="leg-row"><span class="leg-dot bwd"></span><span data-i18n="inbound">Обратно</span></div></div>
+
+  <div class="journey-bar" id="journeyBar" hidden>
+    <button class="journey-route" id="journeyRouteLabel" type="button" data-i18n-title="openRoutePanel"><img src="assets/icons/bus.png" alt="Автобус"><span data-i18n="route">Маршрут</span></button>
+    <button class="finish-route-btn" id="finishRouteBtn" data-i18n="finishRoute">Завершить маршрут</button>
+  </div>
+  <button class="return-follow-btn" id="returnFollowBtn" hidden><img src="assets/icons/return-follow.png" data-i18n-alt="findMe"><span data-i18n="findMe">Найти меня</span></button>
+</div>
+
+<script src="https://unpkg.com/maplibre-gl@5.24.0/dist/maplibre-gl.js"></script>
+<script src="assets/js/core/config.js?v=final-ui-20260729"></script>
+<script src="assets/js/core/state.js?v=final-ui-20260729"></script>
+<script src="assets/js/core/i18n.js?v=final-ui-20260729"></script>
+<script src="assets/js/core/map.js?v=final-ui-20260729"></script>
+<script src="assets/js/services/gps.js?v=final-ui-20260729"></script>
+<script src="assets/js/services/places.js?v=final-ui-20260729"></script>
+<script src="assets/js/features/buses.js?v=final-ui-20260729"></script>
+<script src="assets/js/features/stop-board.js?v=final-ui-20260729"></script>
+<script src="assets/js/features/routes.js?v=final-ui-20260729"></script>
+<script src="assets/js/features/navigation.js?v=final-ui-20260729"></script>
+<script src="assets/js/ui/ui.js?v=final-ui-20260729"></script>
+<script src="assets/js/app.js?v=final-ui-20260729"></script>
+</body>
+</html>
